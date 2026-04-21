@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSE Math Paper 2 - Answer Directory | by Hugo Wong</title>
+    <!-- Tailwind CSS for Modern UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 1);
+        }
+        .ans-btn:hover { transform: translateY(-2px); transition: all 0.2s ease; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Navigation / Hero Section -->
+    <nav class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="bg-blue-600 text-white px-3 py-1 rounded-lg font-bold">DSE</span>
+                <h1 class="font-bold text-xl tracking-tight">Math P2 Directory</h1>
+            </div>
+            <div class="text-sm font-medium text-slate-500 hidden sm:block">
+                Developed by <span class="text-blue-600 font-bold underline">Hugo Wong</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Search & Filter Bar -->
+        <div class="mb-8 flex flex-col md:flex-row gap-4 items-end">
+            <div class="w-full md:w-1/3">
+                <label class="block text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wider">Select Exam Year</label>
+                <select id="yearSelect" class="w-full p-3 bg-white border border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all cursor-pointer">
+                    <!-- Years will be populated by JS -->
+                </select>
+            </div>
+            <div class="w-full md:w-2/3">
+                <label class="block text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wider">Search Question Number</label>
+                <input type="number" id="searchBox" placeholder="Enter Q# (e.g. 41)" class="w-full p-3 bg-white border border-slate-200 rounded-xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div id="loading" class="text-center py-20">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+            <p class="mt-4 text-slate-500">Loading directory...</p>
+        </div>
+
+        <div id="resultsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Cards will be injected here -->
+        </div>
+
+        <!-- No Results -->
+        <div id="emptyState" class="hidden text-center py-20">
+            <p class="text-slate-400 text-lg italic">No questions match your search.</p>
+        </div>
+    </main>
+
+    <!-- Footer & Disclaimer -->
+    <footer class="mt-20 bg-slate-900 text-slate-400 py-12 px-4">
+        <div class="max-w-4xl mx-auto text-center">
+            <p class="text-white font-semibold mb-4 underline decoration-blue-500 underline-offset-4">Legal Disclaimer & Copyright</p>
+            <p class="text-sm leading-relaxed mb-6">
+                The content provided on this website is for educational purposes only. All exam questions and data remain the property of their respective copyright owners (HKEAA). This site is not affiliated with the HKEAA. Solution links lead to third-party platforms (YouTube/Google); we are not responsible for their content.
+            </p>
+            <div class="border-t border-slate-800 pt-6">
+                <p class="text-sm">© <span id="currentYear"></span> <strong class="text-white">Hugo Wong</strong>. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let allData = {};
+        const yearSelect = document.getElementById('yearSelect');
+        const searchBox = document.getElementById('searchBox');
+        const resultsGrid = document.getElementById('resultsGrid');
+        const loading = document.getElementById('loading');
+        const emptyState = document.getElementById('emptyState');
+
+        // Update footer year
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // 1. Fetch JSON Data
+        async function loadData() {
+            try {
+                const response = await fetch('ans.json');
+                allData = await response.json();
+                
+                // Sort years descending
+                const years = Object.keys(allData).sort((a, b) => b - a);
+                
+                // Populate Dropdown
+                years.forEach(year => {
+                    const opt = document.createElement('option');
+                    opt.value = year;
+                    opt.textContent = `DSE Mathematics ${year}`;
+                    yearSelect.appendChild(opt);
+                });
+
+                renderData();
+                loading.classList.add('hidden');
+            } catch (error) {
+                console.error("Error loading JSON:", error);
+                loading.innerHTML = `<p class="text-red-500 font-bold">Error: ans.json not found or corrupted.</p>`;
+            }
+        }
+
+        // 2. Search for Solution Function
+        function findSolution(year, qNumber) {
+            const query = `DSE MATH ${year} Q${qNumber}`;
+            const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+            window.open(url, '_blank');
+        }
+
+        // 3. Render Grid
+        function renderData() {
+            const selectedYear = yearSelect.value;
+            const searchTerm = searchBox.value;
+            const data = allData[selectedYear] || [];
+            
+            resultsGrid.innerHTML = '';
+            
+            const filtered = data.filter(item => 
+                searchTerm === '' || item.question.toString().includes(searchTerm)
+            );
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "glass-card p-6 rounded-2xl shadow-sm ans-btn";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="text-xs font-bold text-blue-500 uppercase tracking-widest">Question</span>
+                                <h3 class="text-2xl font-bold text-slate-800">#${item.question}</h3>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold text-emerald-500 uppercase tracking-widest font-mono">Answer</span>
+                                <div class="text-2xl font-black text-emerald-600">${item.answer}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-5">
+                            <div class="flex justify-between text-xs mb-1 font-medium text-slate-500">
+                                <span>Correct Rate</span>
+                                <span>${item.percentage}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-blue-400 h-full rounded-full" style="width: ${item.percentage}%"></div>
+                            </div>
+                        </div>
+
+                        <button onclick="findSolution('${selectedYear}', ${item.question})" 
+                                class="w-full bg-slate-800 hover:bg-black text-white py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-colors">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            View Solution
+                        </button>
+                    `;
+                    resultsGrid.appendChild(card);
+                });
+            }
+        }
+
+        // Event Listeners
+        yearSelect.addEventListener('change', renderData);
+        searchBox.addEventListener('input', renderData);
+
+        // Init
+        loadData();
+    </script>
+</body>
+</html>
